@@ -30,3 +30,6 @@ Job Repository - Stores metadata in Spring Batch metadata tables
 Parameters are passed like - "item=Shoe" "run.date(date)=2020/10/13"
 
 Restartability - If a step is already completed then that step will not be executed in case the job fails in next subsequent steps.
+
+Batch Status - ABANDONED, COMPLETED, FAILED, STARTED, STOPPED (Fixed - mentioned in enum)
+Exit Status - Can be custom, COMPLETED, EXECUTING, FAILED, STOPPED (Used to control Job Flow)
