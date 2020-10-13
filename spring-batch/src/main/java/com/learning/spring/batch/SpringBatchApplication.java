@@ -35,8 +35,12 @@ public class SpringBatchApplication {
 
     @Bean
     public Step deliverToCustomerStep() {
+        boolean isGotLost = false;
         return this.stepBuilderFactory.get("deliverToCustomerStep")
                 .tasklet((stepContribution, chunkContext) -> {
+                    if(isGotLost)
+                        throw new RuntimeException("Got lost while trying to deliver item");
+
                     System.out.println("Delivering the package to the customer");
                     return RepeatStatus.FINISHED;
                 }).build();
