@@ -85,13 +85,14 @@ public class SpringBatchApplication {
         return this.jobBuilderFactory.get("deliverPackageJob")
                 .start(packageItemStep())
                 .next(deliverToCustomerStep())
-                .on("FAILED")
-                .to(customerNotReceiveStep())
+                    .on("FAILED")
+                    //.to(customerNotReceiveStep())
+                    .fail() //This will fail the entire job
                 .from(deliverToCustomerStep())
-                .on("*").to(decider())
-                .on("PRESENT").to(customerReceiveStep())
-                .from(decider()).on("ABSENT").to(leaveAtDoorStep())
-                .end()
+                    .on("*").to(decider())
+                        .on("PRESENT").to(customerReceiveStep())
+                        .from(decider()).on("ABSENT").to(leaveAtDoorStep())
+                    .end()
                 .build();
     }
 
