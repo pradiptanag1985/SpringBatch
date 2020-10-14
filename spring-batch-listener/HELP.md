@@ -18,3 +18,5 @@ Listener - JobExecutionListener, StepExecutionListener, ChunkListener, SkipListe
 
 Parameter :
 "flowerType=rose" "run.date(date)=2020/10/14"
+
+Flow - It is used to ensure re-usability

@@ -6,6 +6,9 @@ import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.job.builder.FlowBuilder;
+import org.springframework.batch.core.job.flow.Flow;
+import org.springframework.batch.core.job.flow.support.SimpleFlow;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -52,14 +55,28 @@ public class SpringBatchListenerApplication {
 	}
 
 	@Bean
+	public Step deliveryStep() {
+		return stepBuilderFactory.get("deliveryStep").tasklet((stepContribution, chunkContext) -> {
+			System.out.println("Running the Delivery Step");
+			return RepeatStatus.FINISHED;
+		}).build();
+	}
+
+	@Bean
+	public Flow deliveryFlow() { //Flow is used to ensure re-usability
+		return new FlowBuilder<SimpleFlow>("deliveryFlow").start(arrangeFlowersStep())
+				.on("*").to(deliveryStep()).build();
+	}
+
+	@Bean
 	public Job flowerJob() {
 		return jobBuilderFactory.get("flowerJob")
 				.start(getFlowerStep())
 					.on("trim")
-						.to(removeThronesStep()).next(arrangeFlowersStep())
+						.to(removeThronesStep()).next(deliveryFlow())
 				.from(getFlowerStep())
 					.on("donttrim")
-						.to(arrangeFlowersStep())
+						.to(deliveryFlow())
 				.end()
 				.build();
 	}
