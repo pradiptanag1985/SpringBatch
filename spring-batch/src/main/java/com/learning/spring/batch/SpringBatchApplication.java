@@ -1,10 +1,12 @@
 package com.learning.spring.batch;
 
+import com.learning.spring.batch.decider.DeliveryDecider;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.job.flow.JobExecutionDecider;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -20,6 +22,11 @@ public class SpringBatchApplication {
 
     @Autowired
     private StepBuilderFactory stepBuilderFactory;
+
+    @Bean
+    public JobExecutionDecider decider() {
+        return new DeliveryDecider();
+    }
 
     @Bean
     public Step packageItemStep() {
@@ -56,6 +63,15 @@ public class SpringBatchApplication {
     }
 
     @Bean
+    public Step leaveAtDoorStep() {
+        return this.stepBuilderFactory.get("leaveAtDoorStep")
+                .tasklet((stepContribution, chunkContext) -> {
+                    System.out.println("Leave the package at the door");
+                    return RepeatStatus.FINISHED;
+                }).build();
+    }
+
+    @Bean
     public Step customerNotReceiveStep() {
         return this.stepBuilderFactory.get("customerNotReceiveStep")
                 .tasklet((stepContribution, chunkContext) -> {
@@ -69,9 +85,12 @@ public class SpringBatchApplication {
         return this.jobBuilderFactory.get("deliverPackageJob")
                 .start(packageItemStep())
                 .next(deliverToCustomerStep())
-                .on("FAILED").to(customerNotReceiveStep())
+                .on("FAILED")
+                .to(customerNotReceiveStep())
                 .from(deliverToCustomerStep())
-                .on("*").to(customerReceiveStep())
+                .on("*").to(decider())
+                .on("PRESENT").to(customerReceiveStep())
+                .from(decider()).on("ABSENT").to(leaveAtDoorStep())
                 .end()
                 .build();
     }

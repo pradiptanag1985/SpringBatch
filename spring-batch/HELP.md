@@ -33,3 +33,5 @@ Restartability - If a step is already completed then that step will not be execu
 
 Batch Status - ABANDONED, COMPLETED, FAILED, STARTED, STOPPED (Fixed - mentioned in enum)
 Exit Status - Can be custom, COMPLETED, EXECUTING, FAILED, STOPPED (Used to control Job Flow)
+
+In order to implement custom exit status, JobExecutionDecider interface needs to be implemented
