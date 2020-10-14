@@ -38,10 +38,28 @@ public class SpringBatchApplication {
         boolean isGotLost = false;
         return this.stepBuilderFactory.get("deliverToCustomerStep")
                 .tasklet((stepContribution, chunkContext) -> {
-                    if(isGotLost)
+                    if (isGotLost)
                         throw new RuntimeException("Got lost while trying to deliver item");
 
                     System.out.println("Delivering the package to the customer");
+                    return RepeatStatus.FINISHED;
+                }).build();
+    }
+
+    @Bean
+    public Step customerReceiveStep() {
+        return this.stepBuilderFactory.get("customerReceiveStep")
+                .tasklet((stepContribution, chunkContext) -> {
+                    System.out.println("Customer received the package");
+                    return RepeatStatus.FINISHED;
+                }).build();
+    }
+
+    @Bean
+    public Step customerNotReceiveStep() {
+        return this.stepBuilderFactory.get("customerNotReceiveStep")
+                .tasklet((stepContribution, chunkContext) -> {
+                    System.out.println("Customer didn't receive the package");
                     return RepeatStatus.FINISHED;
                 }).build();
     }
@@ -51,6 +69,10 @@ public class SpringBatchApplication {
         return this.jobBuilderFactory.get("deliverPackageJob")
                 .start(packageItemStep())
                 .next(deliverToCustomerStep())
+                .on("FAILED").to(customerNotReceiveStep())
+                .from(deliverToCustomerStep())
+                .on("*").to(customerReceiveStep())
+                .end()
                 .build();
     }
 
