@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 
 @SpringBootApplication
 @EnableBatchProcessing
@@ -63,9 +64,23 @@ public class SpringBatchListenerApplication {
 	}
 
 	@Bean
+	public Step billingStep() {
+		return stepBuilderFactory.get("billingStep").tasklet((stepContribution, chunkContext) -> {
+			System.out.println("Running the Billing Step");
+			return RepeatStatus.FINISHED;
+		}).build();
+	}
+
+	@Bean
 	public Flow deliveryFlow() { //Flow is used to ensure re-usability
 		return new FlowBuilder<SimpleFlow>("deliveryFlow").start(arrangeFlowersStep())
 				.on("*").to(deliveryStep()).build();
+	}
+
+	@Bean
+	public Flow billingFlow() { //Flow is used to ensure re-usability
+		return new FlowBuilder<SimpleFlow>("billingFlow").start(arrangeFlowersStep())
+				.on("*").to(billingStep()).build();
 	}
 
 	@Bean
@@ -73,12 +88,20 @@ public class SpringBatchListenerApplication {
 		return jobBuilderFactory.get("flowerJob")
 				.start(getFlowerStep())
 					.on("trim")
-						.to(removeThronesStep()).next(deliveryFlow())
+						.to(removeThronesStep())
+						.next(deliveryFlow())
 				.from(getFlowerStep())
 					.on("donttrim")
 						.to(deliveryFlow())
 				.end()
 				.build();
+		//Parallel flows using split
+		/*return jobBuilderFactory.get("flowerJob")
+				.start(getFlowerStep())
+				.split(new SimpleAsyncTaskExecutor())
+				.add(deliveryFlow(), billingFlow())
+				.end()
+				.build();*/
 	}
 
 	public static void main(String[] args) {
