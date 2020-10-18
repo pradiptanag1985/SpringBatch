@@ -1,10 +1,16 @@
 package com.spring.batch;
 
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.JobParametersInvalidException;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
+import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
+import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.file.FlatFileItemReader;
@@ -16,9 +22,14 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
+
+import java.util.Date;
 
 @SpringBootApplication
 @EnableBatchProcessing
+@EnableScheduling
 public class SpringBatchFlatFileReaderApplication {
 
     public static String[] tokens = new String[]{"Serial Number", "Company Name", "Employee Markme", "Description", "Leave"};
@@ -28,6 +39,16 @@ public class SpringBatchFlatFileReaderApplication {
 
     @Autowired
     private StepBuilderFactory stepBuilderFactory;
+
+    @Autowired
+    private JobLauncher jobLauncher;
+
+    @Scheduled(cron = "0/30 * * * * *")
+    public void runJob() throws JobParametersInvalidException, JobExecutionAlreadyRunningException, JobRestartException, JobInstanceAlreadyCompleteException {
+        JobParametersBuilder jobParametersBuilder = new JobParametersBuilder();
+        jobParametersBuilder.addDate("runTime", new Date());
+        this.jobLauncher.run(chunkBasedJob(), jobParametersBuilder.toJobParameters());
+    }
 
     @Bean
     public ItemReader<DataHolder> itemReader() {
