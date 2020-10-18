@@ -1,9 +1,13 @@
 package com.spring.batch;
 
+import javax.validation.constraints.Pattern;
+
 public class DataHolder {
     private long serialNumber;
     private String companyName;
     private String employee;
+
+    @Pattern(regexp = ".*COLLINS")
     private String description;
     private int leave;
 

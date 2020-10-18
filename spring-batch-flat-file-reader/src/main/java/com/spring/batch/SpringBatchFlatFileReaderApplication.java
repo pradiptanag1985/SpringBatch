@@ -5,24 +5,23 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
-import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.batch.item.validator.BeanValidatingItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.FileSystemResource;
 
-import java.util.List;
-
 @SpringBootApplication
 @EnableBatchProcessing
 public class SpringBatchFlatFileReaderApplication {
 
-    public static String[] tokens = new String[] {"Serial Number", "Company Name", "Employee Markme", "Description", "Leave"};
+    public static String[] tokens = new String[]{"Serial Number", "Company Name", "Employee Markme", "Description", "Leave"};
 
     @Autowired
     private JobBuilderFactory jobBuilderFactory;
@@ -46,10 +45,18 @@ public class SpringBatchFlatFileReaderApplication {
     }
 
     @Bean
+    public ItemProcessor<DataHolder, DataHolder> itemProcessor() {
+        BeanValidatingItemProcessor<DataHolder> itemProcessor = new BeanValidatingItemProcessor<>();
+        itemProcessor.setFilter(true);
+        return itemProcessor;
+    }
+
+    @Bean
     public Step chunkBasedStep() {
         return this.stepBuilderFactory.get("flatFileReaderStep")
                 .<DataHolder, DataHolder>chunk(20)
                 .reader(itemReader())
+                .processor(itemProcessor())
                 .writer(items -> {
                     System.out.println(String.format("Received a list of size %s", items.size()));
                     items.forEach(System.out::println);
