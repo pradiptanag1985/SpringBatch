@@ -11,3 +11,5 @@ For further reference, please consider the following sections:
 
 Single threaded DB Item Reader - JdbcCursorItemReader
 Multi threaded DB Item Reader - JdbcPagingItemReader
+
+skip, retry
