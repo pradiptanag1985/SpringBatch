@@ -52,11 +52,22 @@ public class SpringBatchFlatFileReaderApplication {
     }
 
     @Bean
+    public ItemProcessor<DataHolder, DataHolder> customItemProcessor() {
+        return new CustomItemProcessor();
+    }
+
+
+    @Bean
     public Step chunkBasedStep() {
         return this.stepBuilderFactory.get("flatFileReaderStep")
                 .<DataHolder, DataHolder>chunk(20)
                 .reader(itemReader())
                 .processor(itemProcessor())
+                .processor(customItemProcessor())
+                .faultTolerant()
+                .skip(IllegalStateException.class)
+                .skipLimit(50)
+                .listener(new CustomSkipListener())
                 .writer(items -> {
                     System.out.println(String.format("Received a list of size %s", items.size()));
                     items.forEach(System.out::println);
